@@ -1657,6 +1657,9 @@ func (adh *AdminHandler) ForceUnloadTaskQueuePartition(
 	if request == nil {
 		return nil, errRequestNotSet
 	}
+	if len(request.NamespaceId) == 0 {
+		return nil, errNamespaceNotSet
+	}
 
 	namespaceID, err := adh.namespaceRegistry.GetNamespaceID(namespace.Name(request.GetNamespaceId()))
 	if err != nil {
