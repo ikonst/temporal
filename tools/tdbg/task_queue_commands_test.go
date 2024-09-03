@@ -46,6 +46,50 @@ type (
 	}
 )
 
+type commonTaskQueueCommandsType struct {
+	Name       string
+	inputFlags []string
+	err        error
+}
+
+var commonTaskQueueCommands = []commonTaskQueueCommandsType{
+	{
+		Name:       "task queue type: workflow",
+		inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_WORKFLOW"},
+		err:        nil,
+	},
+	{
+		Name:       "task queue type: activity",
+		inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_ACTIVITY"},
+		err:        nil,
+	},
+	{
+		Name:       "task queue type: nexus",
+		inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_NEXUS"},
+		err:        nil,
+	},
+	{
+		Name:       "task queue type: invalid",
+		inputFlags: []string{"--task-queue-type", "false"},
+		err:        errors.New("invalid task queue type"), // nolint
+	},
+	{
+		Name:       "task queue type: unspecified",
+		inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_UNSPECIFIED"},
+		err:        errors.New("invalid task queue type"), // nolint
+	},
+	{
+		Name:       "task queue partition ID",
+		inputFlags: []string{"--partition-id", "1"},
+		err:        nil,
+	},
+	{
+		Name:       "sticky name",
+		inputFlags: []string{"--sticky-name", "random"},
+		err:        nil,
+	},
+}
+
 func (t *testClient) AdminClient(*cli.Context) adminservice.AdminServiceClient {
 	return t
 }
@@ -94,65 +138,25 @@ type taskQueueCommandTestSuite struct {
 // TestDescribeTaskQueuePartitionWithArgs tests that the cli accepts the various arguments for
 // --describe-task-queue-partition
 func (s *taskQueueCommandTestSuite) TestDescribeTaskQueuePartition() {
-	type describeTQPartitionTest struct {
-		Name       string
-		inputFlags []string
-		err        error
-	}
 
-	// test cases with different input flags
-	testCases := []describeTQPartitionTest{
-		{
-			Name:       "task queue type: workflow",
-			inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_WORKFLOW"},
-			err:        nil,
-		},
-		{
-			Name:       "task queue type: activity",
-			inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_ACTIVITY"},
-			err:        nil,
-		},
-		{
-			Name:       "task queue type: nexus",
-			inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_NEXUS"},
-			err:        nil,
-		},
-		{
-			Name:       "task queue type: invalid",
-			inputFlags: []string{"--task-queue-type", "false"},
-			err:        errors.New("invalid task queue type"), // nolint
-		},
-		{
-			Name:       "task queue type: unspecified",
-			inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_UNSPECIFIED"},
-			err:        errors.New("invalid task queue type"), // nolint
-		},
-		{
-			Name:       "task queue partition ID",
-			inputFlags: []string{"--partition-id", "1"},
-			err:        nil,
-		},
-		{
-			Name:       "sticky name",
-			inputFlags: []string{"--sticky-name", "random"},
-			err:        nil,
-		},
-		{
-			Name:       "multiple buildId's",
-			inputFlags: []string{"--select-build-id", "['1', '2']"},
-			err:        nil,
-		},
-		{
+	// additional input flags used by --describe-task-queue-partition
+	testCases := append([]commonTaskQueueCommandsType{}, commonTaskQueueCommands...)
+	testCases = append(testCases, commonTaskQueueCommandsType{
+		Name:       "multiple buildId's",
+		inputFlags: []string{"--select-build-id", "['1', '2']"},
+		err:        nil,
+	},
+		commonTaskQueueCommandsType{
 			Name:       "unversioned: false",
 			inputFlags: []string{"--select-unversioned", "false"},
 			err:        nil,
 		},
-		{
+		commonTaskQueueCommandsType{
 			Name:       "allActive: false",
 			inputFlags: []string{"--select-all-active", "false"},
 			err:        nil,
 		},
-	}
+	)
 	baseCommand := []string{"tdbg", "taskqueue", "describe-task-queue-partition",
 		"--task-queue", "test"}
 
@@ -168,54 +172,12 @@ func (s *taskQueueCommandTestSuite) TestDescribeTaskQueuePartition() {
 // TestForceUnloadTaskQueuePartitionWithArgs tests that the cli accepts the various arguments for
 // --force-unload-task-queue-partition
 func (s *taskQueueCommandTestSuite) TestForceUnloadTaskQueuePartition() {
-	type forceUnloadTaskQueuePartitionTest struct {
-		Name       string
-		inputFlags []string
-		err        error
-	}
 
 	// test cases with different input flags
-	testCases := []forceUnloadTaskQueuePartitionTest{
-		{
-			Name:       "task queue type: workflow",
-			inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_WORKFLOW"},
-			err:        nil,
-		},
-		{
-			Name:       "task queue type: activity",
-			inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_ACTIVITY"},
-			err:        nil,
-		},
-		{
-			Name:       "task queue type: nexus",
-			inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_NEXUS"},
-			err:        nil,
-		},
-		{
-			Name:       "task queue type: invalid",
-			inputFlags: []string{"--task-queue-type", "false"},
-			err:        errors.New("invalid task queue type"), // nolint
-		},
-		{
-			Name:       "task queue type: unspecified",
-			inputFlags: []string{"--task-queue-type", "TASK_QUEUE_TYPE_UNSPECIFIED"},
-			err:        errors.New("invalid task queue type"), // nolint
-		},
-		{
-			Name:       "task queue partition ID",
-			inputFlags: []string{"--partition-id", "1"},
-			err:        nil,
-		},
-		{
-			Name:       "sticky name",
-			inputFlags: []string{"--sticky-name", "random"},
-			err:        nil,
-		},
-	}
 	baseCommand := []string{"tdbg", "taskqueue", "force-unload-task-queue-partition",
 		"--task-queue", "test"}
 
-	for _, test := range testCases {
+	for _, test := range commonTaskQueueCommands {
 		cliCommand := append(baseCommand, test.inputFlags...)
 		resp := s.app.Run(cliCommand)
 		if resp != nil {
